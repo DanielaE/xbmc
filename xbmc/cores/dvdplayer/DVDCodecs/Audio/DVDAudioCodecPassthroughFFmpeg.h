@@ -51,6 +51,7 @@ public:
   virtual const char* GetName()  { return "PassthroughFFmpeg"; }
   virtual int GetBufferSize();
   virtual IAudioRenderer::EEncoded GetRenderEncoding() { return m_Encoding; }
+  virtual double GetFrameDuration();
 
 private:
   DllAvFormat m_dllAvFormat;
@@ -71,7 +72,7 @@ private:
   
   typedef struct
   {
-    int      size;
+    unsigned size;
     uint8_t *data;
   } DataPacket;
 
@@ -124,8 +125,10 @@ private:
   bool         m_coreOnly;
   StreamType   m_StreamType;
   int          m_SampleRate;
-  int          m_DataRate;
   int          m_Channels;
+  unsigned int m_numSamplesIn;
+  unsigned int m_numSamplesOut;
+  unsigned int m_MLPUnitSize;
   int          m_SubStreams;
   AVCRC        m_crcMLP[1024];  /* MLP crc table */
   IAudioRenderer::EEncoded m_Encoding;

@@ -112,8 +112,13 @@ public:
   virtual int GetBufferSize() { return 0; }
 
   /*
-   * returns if the render encoding in cas of passtrough
+   * returns the render encoding in case of passtrough
    */
   virtual IAudioRenderer::EEncoded GetRenderEncoding() { return IAudioRenderer::ENCODED_NONE; }
+
+  /*
+   * returns duration of (packed) audio frame
+   */
+  virtual double GetFrameDuration() { return 0; }
 
 };
