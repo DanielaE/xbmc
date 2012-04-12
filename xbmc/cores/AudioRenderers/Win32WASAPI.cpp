@@ -111,8 +111,12 @@ bool CWin32WASAPI::Initialize(IAudioCallback* pCallback, const CStdString& devic
 
   int layoutChannels = 0;
 
-  if(!bAudioPassthrough && channelMap)
+  if(!bAudioPassthrough)
   {
+    //If no channel map is specified, use the default.
+    if(!channelMap)
+      channelMap = (PCMChannels *)wasapi_default_channel_layout[iChannels - 1];
+
     PCMChannels *outLayout = m_remap.SetInputFormat(iChannels, channelMap, uiBitsPerSample / 8, uiSamplesPerSec);
 
     for(PCMChannels *channel = outLayout; *channel != PCM_INVALID; channel++)
@@ -150,43 +154,43 @@ bool CWin32WASAPI::Initialize(IAudioCallback* pCallback, const CStdString& devic
 
   //fill waveformatex
   ZeroMemory(&wfxex, sizeof(WAVEFORMATEXTENSIBLE));
-  wfxex.Format.cbSize          = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
-  wfxex.Format.wFormatTag      = WAVE_FORMAT_EXTENSIBLE;
-  wfxex.Format.nSamplesPerSec  = uiSamplesPerSec;
-  wfxex.Format.wBitsPerSample  = 16;
-  wfxex.Format.nChannels       = 2;
-  wfxex.dwChannelMask          = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+  wfxex.Format.cbSize         = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
+  wfxex.Format.wFormatTag     = WAVE_FORMAT_EXTENSIBLE;
+  wfxex.Format.nSamplesPerSec = uiSamplesPerSec;
+  wfxex.Format.wBitsPerSample = 16;
+  wfxex.Format.nChannels      = 2;
+  wfxex.dwChannelMask         = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
 
   switch (bAudioPassthrough) 
   {
   case ENCODED_IEC61937_AC3:
   case ENCODED_IEC61937_DTS:
-    wfxex.Format.wFormatTag      = WAVE_FORMAT_DOLBY_AC3_SPDIF;
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_AC3_SPDIF;
-	wfxex.Format.nSamplesPerSec  = 48000;
+    wfxex.Format.wFormatTag     = WAVE_FORMAT_DOLBY_AC3_SPDIF;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_AC3_SPDIF;
+	wfxex.Format.nSamplesPerSec = uiSamplesPerSec > 46000 ? 48000 : (uiSamplesPerSec > 38000 ? 44100 : 32000);
 	break;
 
   case ENCODED_IEC61937_EAC3:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_DIGITAL_PLUS;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_DIGITAL_PLUS;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   case ENCODED_IEC61937_MAT:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_MLP;
-    wfxex.dwChannelMask         |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
-                                   SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
-                                   SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
-    wfxex.Format.nChannels       = 8;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_MLP;
+    wfxex.dwChannelMask        |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
+                                  SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
+                                  SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    wfxex.Format.nChannels      = 8;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   case ENCODED_IEC61937_DTSHD:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DTS_HD;
-    wfxex.dwChannelMask         |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
-                                   SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
-                                   SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
-    wfxex.Format.nChannels       = 8;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DTS_HD;
+    wfxex.dwChannelMask        |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
+                                  SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
+                                  SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    wfxex.Format.nChannels      = 8;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   default:
@@ -203,7 +207,7 @@ bool CWin32WASAPI::Initialize(IAudioCallback* pCallback, const CStdString& devic
 
   m_uiAvgBytesPerSec = wfxex.Format.nAvgBytesPerSec;
 
-  m_uiBytesPerFrame = wfxex.Format.nBlockAlign;
+  m_uiBytesPerFrame    = wfxex.Format.nBlockAlign;
   m_uiBytesPerSrcFrame = bAudioPassthrough ? m_uiBytesPerFrame : iChannels * wfxex.Format.wBitsPerSample >> 3;
 
   IMMDeviceEnumerator* pEnumerator = NULL;
