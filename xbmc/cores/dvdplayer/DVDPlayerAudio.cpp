@@ -334,6 +334,7 @@ int CDVDPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe, bool bDropPacket)
       audioframe.bits_per_sample = m_pAudioCodec->GetBitsPerSample();
       audioframe.sample_rate = m_pAudioCodec->GetSampleRate();
 	  audioframe.passthrough = m_pAudioCodec->GetRenderEncoding();
+	  audioframe.duration    = m_pAudioCodec->GetFrameDuration() * DVD_TIME_BASE;
 
       if (audioframe.size <= 0)
         continue;
@@ -353,16 +354,17 @@ int CDVDPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe, bool bDropPacket)
         }
       }
 
-      // compute duration.
-      int n = (audioframe.channels * audioframe.bits_per_sample * audioframe.sample_rate)>>3;
-      if (n > 0)
-      {
-        // safety check, if channels == 0, n will result in 0, and that will result in a nice devide exception
-        audioframe.duration = ((double)audioframe.size * DVD_TIME_BASE) / n;
-
-        // increase audioclock to after the packet
-        m_audioClock += audioframe.duration;
+      if (audioframe.duration <= 0)
+	  {
+        // compute duration.
+        int n = (audioframe.channels * audioframe.bits_per_sample * audioframe.sample_rate)>>3;
+        if (n > 0)
+          // safety check, if channels == 0, n will result in 0, and that will result in a nice devide exception
+          audioframe.duration = ((double)audioframe.size * DVD_TIME_BASE) / n;
       }
+
+	  // increase audioclock to after the packet
+      m_audioClock += audioframe.duration;
 
       if(audioframe.duration > 0)
         m_duration = audioframe.duration;
