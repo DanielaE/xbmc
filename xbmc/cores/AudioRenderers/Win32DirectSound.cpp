@@ -123,43 +123,43 @@ bool CWin32DirectSound::Initialize(IAudioCallback* pCallback, const CStdString& 
 
   //fill waveformatex
   ZeroMemory(&wfxex, sizeof(WAVEFORMATEXTENSIBLE));
-  wfxex.Format.cbSize          = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
-  wfxex.Format.wFormatTag      = WAVE_FORMAT_EXTENSIBLE;
-  wfxex.Format.nSamplesPerSec  = uiSamplesPerSec;
-  wfxex.Format.wBitsPerSample  = 16;
-  wfxex.Format.nChannels       = 2;
-  wfxex.dwChannelMask          = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+  wfxex.Format.cbSize         = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
+  wfxex.Format.wFormatTag     = WAVE_FORMAT_EXTENSIBLE;
+  wfxex.Format.nSamplesPerSec = uiSamplesPerSec;
+  wfxex.Format.wBitsPerSample = 16;
+  wfxex.Format.nChannels      = 2;
+  wfxex.dwChannelMask         = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
 
   switch (bAudioPassthrough) 
   {
   case ENCODED_IEC61937_AC3:
   case ENCODED_IEC61937_DTS:
-    wfxex.Format.wFormatTag      = WAVE_FORMAT_DOLBY_AC3_SPDIF;
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_AC3_SPDIF;
-	wfxex.Format.nSamplesPerSec  = 48000;
+    wfxex.Format.wFormatTag     = WAVE_FORMAT_DOLBY_AC3_SPDIF;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_AC3_SPDIF;
+	wfxex.Format.nSamplesPerSec = uiSamplesPerSec > 46000 ? 48000 : (uiSamplesPerSec > 38000 ? 44100 : 32000);
 	break;
 
   case ENCODED_IEC61937_EAC3:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_DIGITAL_PLUS;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_DIGITAL_PLUS;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   case ENCODED_IEC61937_MAT:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DOLBY_MLP;
-    wfxex.dwChannelMask         |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
-                                   SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
-                                   SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
-    wfxex.Format.nChannels       = 8;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DOLBY_MLP;
+    wfxex.dwChannelMask        |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
+                                  SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
+                                  SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    wfxex.Format.nChannels      = 8;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   case ENCODED_IEC61937_DTSHD:
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_DTS_HD;
-    wfxex.dwChannelMask         |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
-                                   SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
-                                   SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
-    wfxex.Format.nChannels       = 8;
-	wfxex.Format.nSamplesPerSec  = 192000;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DTS_HD;
+    wfxex.dwChannelMask        |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |
+                                  SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT |
+                                  SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    wfxex.Format.nChannels      = 8;
+	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
   default:
@@ -179,7 +179,7 @@ bool CWin32DirectSound::Initialize(IAudioCallback* pCallback, const CStdString& 
   m_AvgBytesPerSec = wfxex.Format.nAvgBytesPerSec;
 
   m_uiBytesPerFrame     = wfxex.Format.nBlockAlign;
-  m_uiDataBytesPerFrame = (wfxex.Format.nBlockAlign / iChannels) * m_uiDataChannels;
+  m_uiDataBytesPerFrame = wfxex.Format.nBlockAlign;
 
   // unsure if these are the right values
   m_dwChunkSize = wfxex.Format.nBlockAlign * 3096;
