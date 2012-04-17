@@ -714,7 +714,13 @@ int CDVDAudioCodecPassthroughFFmpeg::GetBufferSize()
 /* ========================== SYNC FUNCTIONS ========================== */
 unsigned int CDVDAudioCodecPassthroughFFmpeg::SyncAC3(BYTE* pData, unsigned int iSize)
 {
-  unsigned int skip = 0;
+  m_InFrameSize       = 0;
+  m_OutFrameSize      = 0;
+  unsigned blocks     = 6;
+  unsigned collected  = 0;
+  unsigned streamtype = STREAM_TYPE_NULL;
+
+  unsigned skip = 0;
   for(; iSize - skip > 6; ++skip, ++pData)
   {
     /* search for an ac3 sync word */
@@ -735,80 +741,116 @@ unsigned int CDVDAudioCodecPassthroughFFmpeg::SyncAC3(BYTE* pData, unsigned int 
         continue;
 
       /* get the details we need to check crc1 and framesize */
-      unsigned int bitRate = AC3Bitrates[frmsizecod >> 1];
-      unsigned int framesize = 0;
+      unsigned bitRate   = AC3Bitrates[frmsizecod >> 1];
+      unsigned framesize = 0;
       switch(fscod)
       {
         case 0: framesize = bitRate * 2; break;
         case 1: framesize = (320 * bitRate / 147 + (frmsizecod & 1 ? 1 : 0)); break;
         case 2: framesize = bitRate * 4; break;
       }
+      framesize *= 2; // words to bytes
 
-      m_InFrameSize = m_OutFrameSize = framesize * 2;
-      m_SampleRate  = AC3FSCod[fscod];
-      m_numSamplesIn += 6 * 256;  // six audio blocks with 256 coded samples
+      /* is there enough data collected to proceed? */
+      if (iSize - skip < framesize)
+        return skip;
+
+      m_SampleRate   = AC3FSCod[fscod];
+      m_OutFrameSize = framesize;
+      collected      = framesize;
+      streamtype     = STREAM_TYPE_AC3;
 
       /* dont do extensive testing if we have not lost sync */
-      if (!m_LostSync && skip == 0)
-        return 0;
-
-      unsigned int crc_size;
-      /* if we have enough data, validate the entire packet, else try to validate crc2 (5/8 of the packet) */
-      if (framesize <= iSize - skip)
-           crc_size = framesize - 1;
-      else crc_size = (framesize >> 1) + (framesize >> 3) - 1;
-
-      if (crc_size <= iSize - skip)
-        if(m_dllAvUtil.av_crc(m_dllAvUtil.av_crc_get_table(AV_CRC_16_ANSI), 0, &pData[2], crc_size * 2))
+      if (m_LostSync || skip)
+      {
+        if(m_dllAvUtil.av_crc(m_dllAvUtil.av_crc_get_table(AV_CRC_16_ANSI), 0, &pData[2], framesize-2))
           continue;
 
-      /* if we get here, we can sync */
-      m_LostSync   = false;
-      m_StreamType = STREAM_TYPE_AC3;
-      CLog::Log(LOGINFO, "%s - AC3 stream detected (%dHz)", __FUNCTION__, m_SampleRate);
-      return skip;
+        /* if we get here, we can sync */
+        m_LostSync   = false;
+        m_StreamType = STREAM_TYPE_AC3;
+        CLog::Log(LOGINFO, "%s - AC3 stream detected (%dHz)", __FUNCTION__, m_SampleRate);
+      }
+      pData += framesize;
+      iSize -= framesize;
     }
-    else
-    {
+
+    unsigned expected_streamid = 0;
+
+    while (iSize - skip > 6)
+	{
+      uint8_t bsid = pData[5] >> 3;
+      if (bsid <= 10)
+        break; // AC3
+
       /* Enhanced AC-3 */
-      uint8_t strmtyp = pData[2] >> 6;
-      if (strmtyp == 3) continue;
+      unsigned framesize = (((pData[2] & 0x7) << 8) | pData[3]) + 1;
+      uint8_t  strmtyp   = pData[2] >> 6;
+      uint8_t  substrmid = (pData[2] >> 3) & 0x7;
+      uint8_t  fscod     = (pData[4] >> 6) & 0x3;
+      uint8_t  bscod     = (pData[4] >> 4) & 0x3;
 
-      uint8_t      strmid    = (pData[2] >> 3) & 0x7;
-      unsigned int framesize = (((pData[2] & 0x7) << 8) | pData[3]) + 1;
-      uint8_t      fscod     = (pData[4] >> 6) & 0x3;
-      uint8_t      bscod     = (pData[4] >> 4) & 0x3;
-      uint8_t      blocks    = 6;
-
-	  m_SampleRate = AC3FSCod [fscod];
-      if (fscod == 0x3)
-      {
-        if (bscod == 0x3) continue;
-        m_SampleRate >>= 1;
-      }
-      else
-      {
-        blocks = AC3BlkCod[bscod];
-      }
-
-      m_OutFrameSize = 0;
-      m_InFrameSize  = framesize * 2;
-	  if (strmid == 0)  // current code accepts only stream id 0 (i.e. default program stream)
+	  if (pData[0] != 0x0b || pData[1] != 0x77 || bsid > 0x11 || strmtyp == 3 || (fscod & bscod) == 0x3)
 	  {
-        if (!(strmtyp & 1))  // count samples from independent streams only
-          m_numSamplesIn += blocks * 256;  // audio blocks worth 256 coded samples
-        m_OutFrameSize = framesize * 2;
+        iSize = 0;
+		break;
+      }
+
+	  framesize *= 2; // words to bytes
+      /* is there enough data collected to proceed? */
+      if (iSize - skip < framesize)
+	  {
+        streamtype = 0;
+        break;
 	  }
 
-      if (!m_LostSync && m_StreamType == STREAM_TYPE_EAC3 && skip == 0)
-        return 0;
+	  m_SampleRate = AC3FSCod[fscod];
+      if (fscod == 0x3)
+        m_SampleRate >>= 1;
+      else
+        blocks = AC3BlkCod[bscod];
 
-      /* if we get here, we can sync */
-      m_LostSync   = false;
-      m_StreamType = STREAM_TYPE_EAC3;
-      CLog::Log(LOGINFO, "%s - E-AC3 stream detected (%dHz)", __FUNCTION__, m_SampleRate);
-      return skip;
+      if (strmtyp == 0) // independent E-AC3 substream
+      {
+      if (streamtype != STREAM_TYPE_NULL || substrmid != 0)
+          break; // another independent stream packet-> stop collecting
+        m_OutFrameSize = framesize;
+      }
+      else if (strmtyp == 2) // independent replacement E-AC3 substream for existing AC3 substream
+      {
+      if (streamtype != STREAM_TYPE_AC3 || substrmid != 0)
+          break; // unexpected stream structure -> stop collecting
+        m_OutFrameSize = framesize;
+      }
+      else // dependent substream
+      {
+        if ((m_StreamType == STREAM_TYPE_EAC3 && streamtype == STREAM_TYPE_NULL) || expected_streamid != substrmid)
+          break; // unexpected stream structure -> stop collecting
+        if (++expected_streamid >= 8)
+          break; // unexpected stream structure -> stop collecting
+        m_OutFrameSize += framesize;
+      }
+
+      streamtype = STREAM_TYPE_EAC3;
+      collected += framesize;
+
+      if (m_LostSync || m_StreamType != STREAM_TYPE_EAC3 || skip)
+	  {
+        /* if we get here, we can sync */
+        m_LostSync   = false;
+        m_StreamType = STREAM_TYPE_EAC3;
+        CLog::Log(LOGINFO, "%s - E-AC3 stream detected (%dHz)", __FUNCTION__, m_SampleRate);
+	  }
+      pData += framesize;
+      iSize -= framesize;
     }
+
+    if (streamtype && streamtype == m_StreamType)
+	{
+      m_InFrameSize   = collected;
+      m_numSamplesIn += blocks * 256;  // audio blocks worth 256 coded samples
+    }
+	return skip;
   }
 
   /* if we get here, the entire packet is invalid and we have lost sync */

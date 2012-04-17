@@ -112,7 +112,7 @@ public:
   virtual int GetBufferSize() { return 0; }
 
   /*
-   * returns the render encoding in case of passtrough
+   * returns the render encoding in case of passthrough
    */
   virtual IAudioRenderer::EEncoded GetRenderEncoding() { return IAudioRenderer::ENCODED_NONE; }
 
