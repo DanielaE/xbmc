@@ -333,8 +333,7 @@ int CDVDPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe, bool bDropPacket)
       audioframe.channels = m_pAudioCodec->GetChannels(); /* get channels AFTER map so that it can be corrected if bad */
       audioframe.bits_per_sample = m_pAudioCodec->GetBitsPerSample();
       audioframe.sample_rate = m_pAudioCodec->GetSampleRate();
-	  audioframe.passthrough = m_pAudioCodec->GetRenderEncoding();
-	  audioframe.duration    = m_pAudioCodec->GetFrameDuration() * DVD_TIME_BASE;
+      audioframe.passthrough = m_pAudioCodec->GetRenderEncoding();
 
       if (audioframe.size <= 0)
         continue;
@@ -354,8 +353,9 @@ int CDVDPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe, bool bDropPacket)
         }
       }
 
+      audioframe.duration = m_pAudioCodec->GetFrameDuration() * DVD_TIME_BASE;
       if (audioframe.duration <= 0)
-	  {
+      {
         // compute duration.
         int n = (audioframe.channels * audioframe.bits_per_sample * audioframe.sample_rate)>>3;
         if (n > 0)
