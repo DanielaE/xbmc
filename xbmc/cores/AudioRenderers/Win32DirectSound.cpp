@@ -163,23 +163,24 @@ bool CWin32DirectSound::Initialize(IAudioCallback* pCallback, const CStdString& 
 	break;
 
   default:
-    wfxex.Format.nChannels       = iChannels;
+    wfxex.Format.nChannels      = iChannels;
     if (iChannels <= 2)
-      wfxex.Format.wFormatTag    = WAVE_FORMAT_PCM;
-    wfxex.dwChannelMask          = m_uiSpeakerMask;
-    wfxex.SubFormat              = _KSDATAFORMAT_SUBTYPE_PCM;
-    wfxex.Format.wBitsPerSample  = uiBitsPerSample;
+      wfxex.Format.wFormatTag   = WAVE_FORMAT_PCM;
+    wfxex.dwChannelMask         = m_uiSpeakerMask;
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_PCM;
+    wfxex.Format.wBitsPerSample = uiBitsPerSample;
 	break;
   }
 
   wfxex.Samples.wValidBitsPerSample = wfxex.Format.wBitsPerSample;
-  wfxex.Format.nBlockAlign       = wfxex.Format.nChannels * (wfxex.Format.wBitsPerSample >> 3);
-  wfxex.Format.nAvgBytesPerSec   = wfxex.Format.nSamplesPerSec * wfxex.Format.nBlockAlign;
+  wfxex.Format.nBlockAlign          = wfxex.Format.nChannels * (wfxex.Format.wBitsPerSample >> 3);
+  wfxex.Format.nAvgBytesPerSec      = wfxex.Format.nSamplesPerSec * wfxex.Format.nBlockAlign;
 
   m_AvgBytesPerSec = wfxex.Format.nAvgBytesPerSec;
 
   m_uiBytesPerFrame     = wfxex.Format.nBlockAlign;
-  m_uiDataBytesPerFrame = wfxex.Format.nBlockAlign;
+  m_uiDataBytesPerFrame = m_uiBytesPerFrame;
+  if (iChannels != m_uiDataChannels) m_uiDataBytesPerFrame = (m_uiDataBytesPerFrame / iChannels) * m_uiDataChannels;
 
   // unsure if these are the right values
   m_dwChunkSize = wfxex.Format.nBlockAlign * 3096;
