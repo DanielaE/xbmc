@@ -309,6 +309,12 @@
   <string id="344">Актеры</string>
   <string id="345">Год</string>
   <string id="346">Повышать громкость при смешивании</string>
+  
+<!-- Strings 347-349 for HD sound build -->
+  <string id="347">- Выводить звук в формате TrueHD</string>
+  <string id="348">- Выводить звук в формате Dolby Digital Plus</string>
+  <string id="349">- Выводить звук в формате Meridian Lossless Packing</string>
+  
   <string id="350">Программы</string>
   <string id="351">Выкл.</string>
   <string id="352">Затемнение</string>
@@ -605,6 +611,18 @@
   <string id="663">Удалить его из медиатеки?</string>
   <string id="664">Выбрать скрипт</string>
   <string id="665">Степень сжатия</string>
+  
+<!-- Strings 690-699 for HD sound build -->
+  <string id="690">- Формат DTS, поддерживаемый ресивером</string>
+  <string id="691">нет</string>
+  <string id="692">DTS-5.1</string>
+  <string id="693">DTS-ES</string>
+  <string id="694">DTS-96/24</string>
+  <string id="695">DTS-HD High Resolution Audio</string>
+  <string id="696">DTS-HD Master Audio</string>
+  <string id="697">- Режим вывода прочих форматов DTS</string>
+  <string id="698">декодирование (LPCM)</string>
+  <string id="699">ядро DTS</string>
 
   <string id="700">Очистка медиатеки…</string>
   <string id="701">Удаление старых песен из медиатеки…</string>
