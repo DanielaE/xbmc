@@ -99,15 +99,13 @@ bool CDVDAudioCodecPassthroughFFmpeg::SetupMuxer(CDVDStreamInfo &hints, CStdStri
   }
 
   /* allocate a the format context */
-  muxer.m_pFormat = m_dllAvFormat.avformat_alloc_context();
+  int rc = m_dllAvFormat.avformat_alloc_output_context2(&muxer.m_pFormat, fOut, NULL, NULL);
   if (!muxer.m_pFormat)
   {
     CLog::Log(LOGERROR, "CDVDAudioCodecPassthroughFFmpeg::SetupMuxer - Failed to allocate AVFormat context");
     Dispose();
     return false;
   }
-
-  muxer.m_pFormat->oformat = fOut;
 
   /* allocate a put_byte struct so we can grab the output */
   muxer.m_pFormat->pb = m_dllAvFormat.avio_alloc_context(muxer.m_BCBuffer, sizeof(muxer.m_BCBuffer), AVIO_FLAG_READ, &muxer,  NULL, MuxerReadPacket, NULL);
@@ -187,8 +185,8 @@ bool CDVDAudioCodecPassthroughFFmpeg::SetupMuxer(CDVDStreamInfo &hints, CStdStri
                            break;
   }
 
-  m_dllAvUtil.av_opt_set(muxer.m_pFormat->priv_data, "dtshd_rate", dtshd_rate, 0);
-  m_dllAvUtil.av_opt_set(muxer.m_pFormat->priv_data, "dtshd_fallback_time", -1, 0);
+  m_dllAvUtil.av_opt_set_int(muxer.m_pFormat->priv_data, "dtshd_rate", dtshd_rate, 0);
+  m_dllAvUtil.av_opt_set_int(muxer.m_pFormat->priv_data, "dtshd_fallback_time", -1, 0);
 
   AVCodecContext *codec = muxer.m_pStream->codec;
   codec->codec_type     = AVMEDIA_TYPE_AUDIO;
