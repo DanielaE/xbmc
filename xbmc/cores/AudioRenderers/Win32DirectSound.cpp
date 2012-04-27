@@ -153,6 +153,11 @@ bool CWin32DirectSound::Initialize(IAudioCallback* pCallback, const CStdString& 
 	wfxex.Format.nSamplesPerSec = 192000;
 	break;
 
+  case ENCODED_IEC61937_DTSHR:
+    wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DTS_HD;
+	wfxex.Format.nSamplesPerSec = 192000;
+	break;
+
   case ENCODED_IEC61937_DTSHD:
     wfxex.SubFormat             = _KSDATAFORMAT_SUBTYPE_DTS_HD;
     wfxex.dwChannelMask        |= SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY |

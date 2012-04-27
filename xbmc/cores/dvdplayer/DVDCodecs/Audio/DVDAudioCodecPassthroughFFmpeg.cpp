@@ -163,12 +163,15 @@ bool CDVDAudioCodecPassthroughFFmpeg::SetupMuxer(CDVDStreamInfo &hints, CStdStri
     case CODEC_ID_AC3 :    m_Encoding = IAudioRenderer::ENCODED_IEC61937_AC3;
                            break;
 
-	case CODEC_ID_EAC3:    m_Encoding = IAudioRenderer::ENCODED_IEC61937_EAC3;
+    case CODEC_ID_EAC3:    m_Encoding = IAudioRenderer::ENCODED_IEC61937_EAC3;
                            break;
 
-	case CODEC_ID_DTS :    if (hints.profile >= FF_PROFILE_DTS_HD_HRA) {
+    case CODEC_ID_DTS :    if (hints.profile >= FF_PROFILE_DTS_HD_MA) {
                              m_Encoding = IAudioRenderer::ENCODED_IEC61937_DTSHD;
                              dtshd_rate = 768000;
+						   } else if (hints.profile == FF_PROFILE_DTS_HD_HRA) {
+                             m_Encoding = IAudioRenderer::ENCODED_IEC61937_DTSHR;
+                             dtshd_rate = 192000;
                            } else {
                              m_Encoding = IAudioRenderer::ENCODED_IEC61937_DTS;
                            }
@@ -181,7 +184,7 @@ bool CDVDAudioCodecPassthroughFFmpeg::SetupMuxer(CDVDStreamInfo &hints, CStdStri
     case CODEC_ID_TRUEHD : m_Encoding = IAudioRenderer::ENCODED_IEC61937_MAT;
                            break;
 
-	default:               m_Encoding = IAudioRenderer::ENCODED_NONE;
+    default:               m_Encoding = IAudioRenderer::ENCODED_NONE;
                            break;
   }
 
